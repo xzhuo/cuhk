@@ -1,0 +1,48 @@
+# FROM nvidia/cuda:8.0-cudnn6-runtime-ubuntu16.04
+FROM nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04
+
+RUN apt update \
+    && apt install -y software-properties-common \
+    && add-apt-repository ppa:deadsnakes/ppa
+
+RUN apt-get update \
+    && apt-get install -y curl git wget python3.6 python3-pip \
+        libncurses5-dev zlib1g-dev libbz2-dev liblzma-dev libcurl3-dev \
+        # libssl-dev xz-utils build-essential \
+    && apt-get clean
+
+# upgrade pip to the latest for 3.6:
+RUN curl https://bootstrap.pypa.io/get-pip.py | python3.6
+
+RUN rm /usr/bin/python3 \
+    && ln -s /usr/bin/python3.6 /usr/bin/python3
+
+RUN pip3 install numpy==1.16.1 \
+    && pip3 install pandas \
+    && pip3 install h5py==2.10.0 \
+    && pip3 install keras==2.1.6 \
+#    && pip3 install tensorflow==1.12.0 \
+    && pip3 install tensorflow-gpu==1.12.0 \
+    && pip3 install tqdm
+
+RUN cpan Statistics::Basic
+
+WORKDIR /usr/src
+#Samtools
+RUN wget https://github.com/samtools/samtools/releases/download/1.12/samtools-1.12.tar.bz2 \
+    && tar jxf samtools-1.12.tar.bz2 \
+    && rm samtools-1.12.tar.bz2 \
+    && cd samtools-1.12 \
+    && ./configure --prefix $(pwd) \
+    && make
+#bwa
+RUN wget https://pilotfiber.dl.sourceforge.net/project/bio-bwa/bwa-0.7.17.tar.bz2 \
+    && tar jxf bwa-0.7.17.tar.bz2 \
+    && rm bwa-0.7.17.tar.bz2 \
+    && cd bwa-0.7.17 \
+    && make
+
+ENV PATH=${PATH}:/usr/src/samtools-1.12:/usr/src/bwa-0.7.17
+
+RUN mkdir /cuhk/
+ADD bin /cuhk
